@@ -181,7 +181,7 @@ def lbs(betas, pose, v_template, shapedirs, posedirs, J_regressor, parents,
     device = betas.device
 
     # Add shape contribution
-    v_shaped = v_template + blend_shapes(betas, shapedirs)
+    v_shaped = v_template #+ blend_shapes(betas, shapedirs)
 
     # Get the joints
     # NxJx3 array
