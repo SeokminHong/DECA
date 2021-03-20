@@ -186,9 +186,14 @@ class FLAME(nn.Module):
         if eye_pose_params is None:
             eye_pose_params = self.eye_pose.expand(batch_size, -1)
         betas = torch.cat([shape_params, expression_params], dim=1)
+        normalized_pose = torch.cat([pose_params[:, :3], self.default_neck_pose.expand(batch_size, -1), pose_params[:, 3:], eye_pose_params], dim=1)
         full_pose = torch.cat([pose_params[:, :3], self.neck_pose.expand(batch_size, -1), pose_params[:, 3:], eye_pose_params], dim=1)
         template_vertices = self.v_template.unsqueeze(0).expand(batch_size, -1, -1)
 
+        normalized_vertices, _ = lbs(betas, normalized_pose, template_vertices,
+                          self.shapedirs, self.posedirs,
+                          self.J_regressor, self.parents,
+                          self.lbs_weights, dtype=self.dtype)
         vertices, _ = lbs(betas, full_pose, template_vertices,
                           self.shapedirs, self.posedirs,
                           self.J_regressor, self.parents,
@@ -211,7 +216,7 @@ class FLAME(nn.Module):
         landmarks3d = vertices2landmarks(vertices, self.faces_tensor,
                                        self.full_lmk_faces_idx.repeat(bz, 1),
                                        self.full_lmk_bary_coords.repeat(bz, 1, 1))
-        return vertices, landmarks2d, landmarks3d
+        return normalized_vertices, landmarks2d, landmarks3d
 
 class FLAMETex(nn.Module):
     """
