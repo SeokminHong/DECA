@@ -234,7 +234,7 @@ class DECA(object):
         grid_image = np.minimum(np.maximum(grid_image, 0), 255).astype(np.uint8)
         return grid_image
     
-    def save_obj(self, filename, opdict):
+    def save_obj(self, filename, opdict, simple=False):
         '''
         vertices: [nv, 3], tensor
         texture: [3, h, w], tensor
@@ -242,9 +242,13 @@ class DECA(object):
         i = 0
         vertices = opdict['vertices'][i].cpu().numpy()
         faces = self.render.faces[0].cpu().numpy()
-        texture = util.tensor2image(opdict['uv_texture_gt'][i])
-        uvcoords = self.render.raw_uvcoords[0].cpu().numpy()
-        uvfaces = self.render.uvfaces[0].cpu().numpy()
+        texture = None
+        uvcoords = None
+        uvfaces = None
+        if not simple:
+            texture = util.tensor2image(opdict['uv_texture_gt'][i])
+            uvcoords = self.render.raw_uvcoords[0].cpu().numpy()
+            uvfaces = self.render.uvfaces[0].cpu().numpy()
         # save coarse mesh, with texture and normal map
         normal_map = util.tensor2image(opdict['uv_detail_normals'][i]*0.5 + 0.5)
         util.write_obj(filename, vertices, faces, 
@@ -252,6 +256,8 @@ class DECA(object):
                         uvcoords=uvcoords, 
                         uvfaces=uvfaces, 
                         normal_map=normal_map)
+        if simple:
+            return
         # upsample mesh, save detailed mesh
         texture = texture[:,:,[2,1,0]]
         normals = opdict['normals'][i].cpu().numpy()

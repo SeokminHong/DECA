@@ -53,7 +53,7 @@ class TestData(Dataset):
         if isinstance(testpath, list):
             self.imagepath_list = testpath
         elif os.path.isdir(testpath): 
-            self.imagepath_list = glob(testpath + '/*.jpg') +  glob(testpath + '/*.png') + glob(testpath + '/*.bmp')
+            self.imagepath_list = glob(testpath + '/**/*.jpg', recursive=True) +  glob(testpath + '/**/*.png', recursive=True) + glob(testpath + '/**/*.bmp', recursive=True)
         elif os.path.isfile(testpath) and (testpath[-3:] in ['jpg', 'png', 'bmp']):
             self.imagepath_list = [testpath]
         elif os.path.isfile(testpath) and (testpath[-3:] in ['mp4', 'csv', 'vid', 'ebm']):
@@ -61,7 +61,7 @@ class TestData(Dataset):
         else:
             print(f'please check the test path: {testpath}')
             exit()
-        print('total {} images'.format(len(self.imagepath_list)))
+        print(f'total {len(self.imagepath_list)} images: {testpath}')
         self.imagepath_list = sorted(self.imagepath_list)
         self.crop_size = crop_size
         self.scale = scale

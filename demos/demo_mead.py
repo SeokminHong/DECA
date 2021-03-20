@@ -1,5 +1,6 @@
 import os, sys
 import argparse
+import shutil
 from tqdm import tqdm
 import tarfile
 import moviepy.editor as mp
@@ -20,24 +21,24 @@ def main(args):
         if 'front/' in member.name and '.mp4' in member.name:
             t.extract(member, '/content')
             video_name = f'/content/{member.name}'
-            datasets.video2sequence(video_name)
             if args.gen_audio:
                 clip = mp.VideoFileClip(video_name)
                 audio_path = os.path.join(savefolder, member.name.replace('.mp4', '.wav', 1)[len('video/front/'):])
                 util.check_mkdir(os.path.dirname(audio_path))
                 clip.audio.write_audiofile(audio_path)
-    
-    testdata = datasets.TestData('/content/video/', iscrop=True, face_detector=args.detector)
+            testdata = datasets.TestData(video_name, iscrop=True, face_detector=args.detector)
+            os.remove(video_name)
 
-    deca_cfg.model.use_tex = False
-    deca = DECA(config = deca_cfg, device=device)
-    for i in tqdm(range(len(testdata))):
-        name = testdata[i]['imagename'][len("video/front/"):]
-        images = testdata[i]['image'].to(device)[None,...]
-        codedict = deca.encode(images)
-        opdict, visdict = deca.decode(codedict) #tensor
-        deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict)
-    print(f'-- please check the results in {savefolder}')
+            deca_cfg.model.use_tex = False
+            deca = DECA(config = deca_cfg, device=device)
+            for i in tqdm(range(len(testdata))):
+                name = testdata[i]['imagename'][len("video/front/"):]
+                images = testdata[i]['image'].to(device)[None,...]
+                codedict = deca.encode(images)
+                opdict, visdict = deca.decode(codedict) #tensor
+                deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict, no_detail=True)
+            shutil.rmtree(video_name.split('.')[0])
+            print(f'-- please check the results in {savefolder}')
 
 
 def str2bool(v):
