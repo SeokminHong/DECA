@@ -26,6 +26,7 @@ from glob import glob
 import scipy.io
 
 from . import detectors
+from ..utils import util
 
 def video2sequence(video_path):
     videofolder = video_path.split('.')[0]
