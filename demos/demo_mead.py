@@ -36,7 +36,7 @@ def main(args):
                 images = testdata[i]['image'].to(device)[None,...]
                 codedict = deca.encode(images)
                 opdict, visdict = deca.decode(codedict) #tensor
-                deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict, no_detail=True)
+                deca.save_obj(os.path.join(savefolder, name, name + '.obj'), opdict, simple=True)
             shutil.rmtree(video_name.split('.')[0])
             print(f'-- please check the results in {savefolder}')
 
