@@ -7,6 +7,7 @@ import moviepy.editor as mp
 from pathlib import Path
 import zipfile
 from glob import glob
+import torch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from decalib.deca import DECA
@@ -29,15 +30,27 @@ def create_deca(args, video, ext_dir='', audio_path=''):
 
     deca_cfg.model.use_tex = False
     deca = DECA(config = deca_cfg, device=device)
-    save_path = os.path.join(savefolder, video[len(ext_dir)+1:-4])
-    Path(save_path).mkdir(parents=True, exist_ok=True)
+    data_file = os.path.join(savefolder, video[len(ext_dir)+1:-4]) + '.pkl'
+    Path(os.path.dirname(data_file)).mkdir(parents=True, exist_ok=True)
+    obj_path = os.path.join(savefolder, video[len(ext_dir)+1:-4])
+    if args.save_obj:
+        Path(obj_path).mkdir(parents=True, exist_ok=True)
+
+    vertices = []
+
     for i in tqdm(range(len(testdata))):
         images = testdata[i]['image'].to(device)[None,...]
         codedict = deca.encode(images)
-        opdict, visdict = deca.decode(codedict) #tensor
-        deca.save_obj(save_path + '/%04d.obj' % i, opdict, simple=True)
+        opdict, visdict = deca.decode(codedict)
+        vertices.append(opdict['vertices'])
+        if args.save_obj:
+            deca.save_obj(obj_path + '/%04d.obj' % i, opdict, simple=True)
+
+    torch.save(torch.cat(vertices), data_file)
+
     shutil.rmtree(video.split('.')[0])
     print(f'-- please check the results in {savefolder}')
+
 
 def mead(args):
     mead_data = args.data
@@ -69,6 +82,7 @@ def mead(args):
             shutil.rmtree(video_name.split('.')[0])
             print(f'-- please check the results in {savefolder}')
 
+
 def ravdess(args):
     temp_dir = os.path.join(cur_dir, 'temp')
     ext_dir = os.path.join(temp_dir, os.path.basename(args.data)[:-4])
@@ -77,6 +91,7 @@ def ravdess(args):
     for video in glob(os.path.join(ext_dir, '**/*.mp4')):
         create_deca(args, video, ext_dir)
     shutil.rmtree(temp_dir)
+
 
 def main(args):
     if args.dataset == 'mead':
@@ -97,6 +112,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DECA: Detailed Expression Capture and Animation')
 
@@ -106,5 +122,6 @@ if __name__ == '__main__':
     parser.add_argument('--savefolder', default=f'{cur_dir}/output', type=str)
     parser.add_argument('--detector', default='fan', type=str)
     parser.add_argument('--gen-audio', type=str2bool, nargs='?', const=True, default=False)
+    parser.add_argument('--save-obj', type=str2bool, nargs='?', const=True, default=False)
 
     main(parser.parse_args())
