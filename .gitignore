@@ -39,3 +39,8 @@ Thumbs.db
 *.pyc
 __pycache__
 
+output/
+video/
+.vscode/
+cub-1.10.0
+temp/
