@@ -69,8 +69,8 @@ class FLAME(nn.Module):
         default_eyball_pose = torch.zeros([1, 6], dtype=self.dtype, requires_grad=False)
         self.register_parameter('eye_pose', nn.Parameter(default_eyball_pose,
                                                          requires_grad=False))
-        default_neck_pose = torch.zeros([1, 3], dtype=self.dtype, requires_grad=False)
-        self.register_parameter('neck_pose', nn.Parameter(default_neck_pose,
+        self.default_neck_pose = torch.zeros([1, 3], dtype=self.dtype, requires_grad=False)
+        self.register_parameter('neck_pose', nn.Parameter(self.default_neck_pose,
                                                           requires_grad=False))
 
         # Static and Dynamic Landmark embeddings for FLAME
@@ -182,11 +182,17 @@ class FLAME(nn.Module):
                 vertices: N X V X 3
                 landmarks: N X number of landmarks X 3
         """
+        device = pose_params.device
         batch_size = shape_params.shape[0]
         if eye_pose_params is None:
             eye_pose_params = self.eye_pose.expand(batch_size, -1)
-        betas = torch.cat([shape_params, expression_params], dim=1)
-        full_pose = torch.cat([pose_params[:, :3], self.neck_pose.expand(batch_size, -1), pose_params[:, 3:], eye_pose_params], dim=1)
+        zero_shape = torch.zeros(shape_params.shape, device=device)
+        betas = torch.cat([zero_shape, expression_params], dim=1)
+        # Use default neck pose
+        neck_pose = self.default_neck_pose.to(device)
+        # Use zero global rotation
+        global_rot = torch.zeros((batch_size, 3), device=device)
+        full_pose = torch.cat([global_rot, neck_pose.expand(batch_size, -1), pose_params[:, 3:], eye_pose_params], dim=1)
         template_vertices = self.v_template.unsqueeze(0).expand(batch_size, -1, -1)
 
         vertices, _ = lbs(betas, full_pose, template_vertices,
